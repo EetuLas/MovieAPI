@@ -95,7 +95,7 @@ app.get('/users/:id', async (req, res) => {
     }
 });
 
-//adding a app.post for adding movies
+//adding a post for adding movies
 
 app.post('/movies', async (req, res) => {
 
@@ -112,6 +112,8 @@ app.post('/movies', async (req, res) => {
 
 })
 
+//adding a post for adding movies
+
 app.post('/genres', async (req, res) => {
 
     const { genreid, genrename } = req.body;
@@ -126,3 +128,72 @@ app.post('/genres', async (req, res) => {
     }
 
 })
+
+//Search movie by a title
+
+app.get('/movies/search', async (req, res) => {
+    const { title } = req.query; // Expect ?title=movieTitle in the request URL
+
+    try {
+        const result = await pgPool.query(
+            'SELECT * FROM movies WHERE title ILIKE $1', 
+            [`%${title}%`]
+        );
+        if (result.rows.length > 0) {
+            res.json(result.rows);
+        } else {
+            res.status(404).json({ error: 'No movies found with the given title' });
+        }
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+//Delete movie by id
+
+app.delete('/movies/:id', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const result = await pgPool.query('DELETE FROM movies WHERE movieid = $1 RETURNING *', [id]);
+        if (result.rows.length > 0) {
+            res.json({ message: 'Movie deleted successfully', deletedMovie: result.rows[0] });
+        } else {
+            res.status(404).json({ error: 'Movie not found' });
+        }
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+//Update a movie
+
+app.put('/movies/:id', async (req, res) => {
+    const { id } = req.params;
+    const { title, releaseyear, genreid, directorid, rating } = req.body;
+
+    try {
+        const result = await pgPool.query(
+            'UPDATE movies SET title = $1, releaseyear = $2, genreid = $3, directorid = $4, rating = $5 WHERE movieid = $6 RETURNING *',
+            [title, releaseyear, genreid, directorid, rating, id]
+        );
+        if (result.rows.length > 0) {
+            res.json({ message: 'Movie updated successfully', updatedMovie: result.rows[0] });
+        } else {
+            res.status(404).json({ error: 'Movie not found' });
+        }
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+//Get all movies
+
+app.get('/movies', async (req, res) => {
+    try {
+        const result = await pgPool.query('SELECT * FROM movies');
+        res.json(result.rows);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
