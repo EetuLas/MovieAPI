@@ -3,7 +3,7 @@ import { pgPool } from './pg_connection.js';
 
 const app = express();
 
-app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.listen(3001, () => {
     console.log('Server is running');
@@ -103,7 +103,22 @@ app.post('/movies', async (req, res) => {
 
     try {
         await pgPool.query(
-            'INSERT INTO movies (title, releaseyear, genreid, directorid, rating) VALUES ($1,$2,$3,$4,$5)', [title, releaseyear, genreid, directorid, rating ]
+            'INSERT INTO movies (title, releaseyear, genreid, directorid, rating) VALUES ($1,$2,$3,$4,$5)', [ title, releaseyear, genreid, directorid, rating ]
+        );
+        res.end();
+    } catch (error) {
+        res.status(400).json({error: error.message})
+    }
+
+})
+
+app.post('/genres', async (req, res) => {
+
+    const { genreid, genrename } = req.body;
+
+    try {
+        await pgPool.query(
+            'INSERT INTO genres (genreid, genrename) VALUES ($1,$2)', [ genreid, genrename ]
         );
         res.end();
     } catch (error) {
